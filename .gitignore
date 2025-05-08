@@ -1,2 +1,5 @@
+/build
+/dist
 *.xlsm
 *.exe
+*.spec

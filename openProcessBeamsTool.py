@@ -1,10 +1,11 @@
+#processBeams_v3_1_rec
 from pathlib import Path
 import glob
 import ctypes # for Windows
 import win32com.client as win32
 win32.gencache.is_readonly=False
 
-toolNameMainPart = "welds"
+toolNameMainPart = "processBeams"
 
 fileName = glob.glob(f"*{toolNameMainPart}*.xlsm")[0]
 if len(fileName) == 0:

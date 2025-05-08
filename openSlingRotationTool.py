@@ -4,7 +4,7 @@ import ctypes # for Windows
 import win32com.client as win32
 win32.gencache.is_readonly=False
 
-toolNameMainPart = "welds"
+toolNameMainPart = "slingsrotation"
 
 fileName = glob.glob(f"*{toolNameMainPart}*.xlsm")[0]
 if len(fileName) == 0:
