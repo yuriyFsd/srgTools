@@ -48,56 +48,22 @@ def addToolBarButton(barName, cmdTitle):
 
 #----------main flow:-------------------
 if installConfirmation() == False: exit()
-#getFemap()
+
+getFemap()
+
 panelTitle = 'srgPanel'
-cmdTitle = "Welding Tool"
 tools = [
     {'title': "Welding Tool", 'file': "openWeldingTool.exe"}, 
-    {'title': "Slings Rotation", 'file': "openSlingsRotationTool.exe"}
+    {'title': "Items/Slings Rotation", 'file': "openSlingRotationTool.exe"},
+    {'title': "AnSets Creation", 'file': "openAnSetTool.exe"},
+    {'title': "Beams As Members", 'file': "openProcessBeamsTool.exe"}
 ]
-
-cmdDir = Path.cwd() #r"C:\Program Files\Siemens\Femap 2406\srgTools"
+cmdDir = str(Path.cwd()) #r"C:\Program Files\Siemens\Femap 2406\srgTools"
 
 reCreateToolBar(panelTitle)
+
 for tool in tools:
     res = addUserCommand(tool['title'], cmdDir + "\\" + tool['file'], "", cmdDir)
     cmdId = addToolBarButton(panelTitle,tool['title'])
-rc = 1
 
-exit()
-
-def getExcel():
-    excel = win32.Dispatch('Excel.Application')
-    excel.Visible = True
-    wb = excel.Workbooks.open(r"E:\projects\2024\dev_welding_tool\test.xlsm")
-    worsheet = wb.Worksheets(1)
-    worsheet.Cells(1, 1).Value = "Hello World111"
-
-getExcel()
-exit()
-try:
-    existObj = pythoncom.connect(Pyfemap.model.CLSID)
-    femap = Pyfemap.model(existObj)
-    femap.feAppMessage(0, "Python API Started")    
-
-    #Throw an error if no Femap instance opened
-except:
-    sys.exit('Femap not open')
-
-
-def createUIpanel(panelTitle):
-    rc = femap.feAddToolbar(panelTitle, 0)
-    # if(femap.feAddToolbar(panelTitle, 0) != -1): return False
-    
-    # [rc, menuId] = femap.feAddToolbarSubmenu(panelTitle, -1, "First Tool")
-
-    #1 Create by python exe (or bas) file that open required excel
-    #2 Create user command and run that exe from #1
-    #3 Add user command to own panel
-    femap.feAddUserCommand("MyCommandTest", "Ctrl+A", )
-    [rc, cmdId] = femap.feAddToolbarUserCommand(panelTitle, 0, "TestCommand", "")
-
-    rc = rc
-if not createUIpanel("testPanel"):
-    rc =  femap.feAppMessageBox(0, "Error")
-    print(rc)
+ctypes.windll.user32.MessageBoxW(0,"SRG Tools Panel has been added to your Femap", "Process Finished", 1)
