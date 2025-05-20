@@ -34,10 +34,9 @@ def reCreateToolBar(title):
     femap.feDeleteToolbar(title)
     return femap.feAddToolbar(title, feConstants.FCCL_TOP) == -1
     
-
 def addUserCommand(cmdTitle, path, cmdArgs, startDir):
     [rc, num, titles, patches, args, startDirs] = femap.feGetUserCommands()
-    if cmdTitle not in titles:
+    if not isinstance(titles, (list, tuple)) or cmdTitle not in titles:
         return femap.feAddUserCommand(cmdTitle, path, cmdArgs, startDir) == -1
 
 def addToolBarButton(barName, cmdTitle):
