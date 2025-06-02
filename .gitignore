@@ -3,3 +3,6 @@
 *.xlsm
 *.exe
 *.spec
+*.7z.*
+*.7z
+*.zip
