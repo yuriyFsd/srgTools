@@ -1,6 +1,7 @@
 import pythoncom
 import Pyfemap
 import datetime
+import sys
 from Pyfemap import constants as feConstants
 import tkinter as tk
 from tkinter import scrolledtext
@@ -12,10 +13,19 @@ import comtypes.client
 tlb_path = r"C:\Program Files\Siemens\Femap 2406\femap.tlb"
 comtypes.client.GetModule(tlb_path)
 
-existObj = pythoncom.connect(Pyfemap.model.CLSID)
-femap = Pyfemap.model(existObj)
+def femapConnect():
+    try:
+        existObj = pythoncom.connect(Pyfemap.model.CLSID)
+        femap = Pyfemap.model(existObj)
+        rc = femap.feAppMessage(feConstants.FCM_NORMAL, "Connected!")
+    except Exception as error:
+        print(error)
+        #ctypes.windll.user32.MessageBoxW(0,"Can't connect to Femap API Server", "Error", 1)
+        sys.exit("Can't connect to Femap API Server ")
+    return femap
+
+femap = femapConnect()
 userData = femap.feUserData
-rc = femap.feAppMessage(feConstants.FCM_NORMAL, "Connected!")
 USER_DATA_TITLE = 'user_messages'
 
 def setUserData(userText, title):
@@ -24,21 +34,11 @@ def setUserData(userText, title):
     rc = userData.PutTitle(title)
     print({rc})
 
-
 def getFemModelUserMsg(title):
     rc = userData.GetTitle(title)
     print(rc)
-    [rc, uData] = userData.ReadString()    
+    [rc, uData] = userData.ReadString()
     return uData
-
-# def createInputTextBox():
-#     print("Creating input text box")
-#     canvas = tk.Canvas(root, height=800, width = 600, bg = "white")
-#     canvas.pack()
-#     string_box = tk.Entry(root)
-#     canvas.create_window(250, 125, window = string_box)
-#     input_string = string_box.get()
-#     print(f"Input string: {input_string}")
 
 def addText(event=None, entry=None, textArea=None):
     text = entry.get()
@@ -53,13 +53,12 @@ def addText(event=None, entry=None, textArea=None):
     textArea.config(state=tk.DISABLED)
 
 def editTextArea(textArea=None):
-    print("Editing text area")    
+    print("Editing text area")
     textArea.config(state=tk.NORMAL)
     textArea.focus()
-    # textArea.bind("<Return>", lambda event: addText(event, entry, textArea))
     print("Text area is now editable")
 
-def saveTextArea(textArea=None):    
+def saveTextArea(textArea=None):
     textArea.config(state=tk.DISABLED)
     userText = textArea.get("1.0", tk.END).strip()
     if userText:
@@ -109,5 +108,3 @@ def uiPanel(userMsgs):
 
 userMsgs = getFemModelUserMsg(USER_DATA_TITLE)
 uiPanel(userMsgs)
-#setUserData()
-#getUserData(dataTitle)
