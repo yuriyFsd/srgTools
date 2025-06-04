@@ -1,0 +1,7 @@
+{"apps": [
+    {"title": "Welding Tool", "file": "openWeldingTool.exe"}, 
+    {"title": "Items/Slings Rotation", "file": "openSlingRotationTool.exe"},
+    {"title": "AnSets Creation", "file": "openAnSetTool.exe"},
+    {"title": "Beams As Members", "file": "openProcessBeamsTool.exe"},
+	{"title": "Model Versions Descr", "file": "modelVersionsMessages.exe"}
+]}

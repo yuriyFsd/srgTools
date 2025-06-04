@@ -3,6 +3,7 @@ import pythoncom
 import Pyfemap
 from Pyfemap import constants as feConstants
 import sys
+import json
 from pathlib import Path
 import ctypes # for Windows
 import win32com.client as win32
@@ -14,6 +15,27 @@ comtypes.client.GetModule(tlb_path)
 from tkinter import messagebox
 # Import the generated module
 import comtypes.gen
+
+def getToolsListFile(fileName):
+    filePath = Path.cwd() / fileName #"tools_list.json"
+    if filePath.exists():
+        return open (filePath, 'r')# as file:
+           #return file
+
+
+def getToolsList():
+    fileName = "tools_list.json"
+    file = getToolsListFile(fileName)
+    if not file:
+        messagebox.showerror('Error', f"File {fileName} not found or empty.")
+        exit(0)
+    else:
+        try:
+            tools = json.load(file)["apps"]
+        except json.JSONDecodeError as e:
+            messagebox.showerror('Error', f"Error decoding JSON: {e}")
+            exit(0)
+    return tools
 
 def installConfirmation():
     return messagebox.askokcancel("SRG ToolBar Installation", "To install SRG ToolBar on Femap?\n\n")
@@ -51,12 +73,16 @@ if installConfirmation() == False: exit()
 getFemap()
 
 panelTitle = 'srgPanel'
-tools = [
-    {'title': "Welding Tool", 'file': "openWeldingTool.exe"}, 
-    {'title': "Items/Slings Rotation", 'file': "openSlingRotationTool.exe"},
-    {'title': "AnSets Creation", 'file': "openAnSetTool.exe"},
-    {'title': "Beams As Members", 'file': "openProcessBeamsTool.exe"}
-]
+tools = getToolsList()
+
+#example of tools list
+# [
+#     {'title': "Welding Tool", 'file': "openWeldingTool.exe"}, 
+#     {'title': "Items/Slings Rotation", 'file': "openSlingRotationTool.exe"},
+#     {'title': "AnSets Creation", 'file': "openAnSetTool.exe"},
+#     {'title': "Beams As Members", 'file': "openProcessBeamsTool.exe"}
+# ]
+
 cmdDir = str(Path.cwd()) #r"C:\Program Files\Siemens\Femap 2406\srgTools"
 
 reCreateToolBar(panelTitle)
