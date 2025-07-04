@@ -1,5 +1,7 @@
 /build
 /dist
+/globalModeling/build
+/globalModeling/dist
 *.xlsm
 *.exe
 *.spec
