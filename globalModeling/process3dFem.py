@@ -18,6 +18,132 @@ def femapConnect():
 
 femap = femapConnect()
 
+SHAPE_TYPES = {
+    'cylinder': 1,
+    'cone': 2,
+    'plane': 3,
+    'other': 0,
+    1: 'cylinder',
+    2: 'cone',
+    3: 'plane',
+    0: 'other'
+}
+
+GEOM_SURFACES = {
+    'first_biggest': 0,
+    'second_biggest': 0,
+    'first_smallest': 0,
+    'second_smallest': 0,
+    'end1': 2,
+    'end2': 3,
+}
+
+def parseSoligGeomSurfaces(solidGeomId):
+    solidGeom = femap.feSolid
+    rc =  solidGeom.Get(solidGeomId)
+    selectingMode = 2 #List contains both the underlying and combined surfaces.
+    rc, numsrfs, surfsIds = solidGeom.Surfaces(selectingMode)
+    surf = femap.feSurface
+    area = 0.0
+    for surfId in surfsIds:
+        rc = surf.Get(surfId)
+        if rc != -1:
+            continue
+        rc = surf.ApproximateArea(area)
+        if area > GEOM_SURFACES['first_biggest']:
+            GEOM_SURFACES['second_biggest'] = GEOM_SURFACES['first_biggest']
+            GEOM_SURFACES['first_biggest'] = area
+            GEOM_SURFACES['end2'] = GEOM_SURFACES['end1']
+            GEOM_SURFACES['end1'] = surfId
+
+    return 1
+
+
+def getShapeTypeOfSolidGeom(solidGeomId):
+    solidGeom = femap.feSolid
+    rc =  solidGeom.Get(solidGeomId)
+    print(solidGeom.type)
+    selectingMode = 2 #List contains both the underlying and combined surfaces.
+    rc, numsrfs, surfsIds = solidGeom.Surfaces(selectingMode)
+    surf = femap.feSurface
+    shape_type = ''
+    areas = {
+        'cone': 0,
+        'cylinder': 0,
+        'plane': 0,
+        'other': 0
+    }
+    for surfId in surfsIds:
+        rc = surf.Get(surfId)
+        if rc != -1:
+            continue
+        rc, area = surf.Area()
+        if (surf.IsCone() == -1):
+            print('cone', surfId)
+            # shape_type = SHAPE_TYPES['cone']
+            areas['cone'] += area
+        elif (surf.IsCylinder() == -1):
+            print('cyl', surfId)
+            # shape_type = SHAPE_TYPES['cylinder']
+            areas['cylinder'] += area
+        elif (surf.IsPlane() == -1):
+            print('plane', surfId)
+            # shape_type = SHAPE_TYPES['plane']
+            areas['plane'] += area
+        else:
+            print('other', surfId)
+            # shape_type = SHAPE_TYPES['other']
+            areas['other'] += area
+    biggestShapeArea = getBiggestSurfaceAreaField(areas)
+    return list(biggestShapeArea.keys())[0]
+
+def getBiggestSurfaceAreaField(areas):
+    biggestArea = 0
+    biggestField = ''
+    for field, area in areas.items():
+        if area > biggestArea:
+            biggestArea = area
+            biggestField = field
+    return { biggestField: biggestArea }
+
+
+print(getShapeTypeOfSolidGeom(1440)) #1440 - cone solid
+exit(0)
+
+def createBeamConeProp():
+    fprop = femap.feProp
+    rc = fprop.Last()
+    newId = 2 # fprop.ID + 1
+    
+    myProp = femap.feProp
+    myProp.title = "Cone1"
+    myProp.type = feConstants.FET_L_BEAM
+    myProp.matlID = 401  # 1 - Steel
+    #rc = myProp.Put(newId)#newId)  
+    rc = myProp.SetflagI(1, feConstants.FSHP_CIRC_TUBE)# = 6 #feConstants.FSHP_CIRC_TUBE
+    rc = myProp.SetflagI(0, 1) # Tapered beam flag
+    # rc = myProp.Setpval(40, 0.139)
+    # rc = myProp.Setpval(45, 0.012)
+
+    computeOnlyOneEnd = True
+    shapeID = feConstants.FSHP_CIRC_TUBE
+    dimensions = [0.139, 0, 0, 0, 0, 0.012]
+    EvalMethod = 1 #0=Auto, 1=Orig-inal, 2=Alternate, 3=Nastran PBEAML
+    shear_center_offset = False
+    Warping = False
+    stress_recovery = False
+    rc = myProp.ComputeStdShape2(computeOnlyOneEnd, shapeID, dimensions, feConstants.FSOR_RIGHT, EvalMethod, shear_center_offset, Warping, stress_recovery)
+    dimensions = [0.159, 0, 0, 0, 0, 0.016]
+    computeOnlyOneEnd = False
+    rc = myProp.ComputeStdShape2(computeOnlyOneEnd, shapeID, dimensions, feConstants.FSOR_RIGHT, EvalMethod, shear_center_offset, Warping, stress_recovery)
+    print(rc)
+    myProp.Put(newId)
+    return 1
+
+createBeamConeProp()
+femap.feViewRegenerate(0)
+exit(0)
+
 def getGroupIdAndMaterialIdFromUser():
     root = tk.Tk()
     root.withdraw()  # Hide the main window
@@ -88,12 +214,23 @@ def getFemapCreatedGeometrySet(tracker):
         femap.feAppMessageBox(feConstants.FCM_ERROR, "Failed to get created geometry set")
         return None
 
-def processTubularSolids(solidsSet, materialId):
+def processTubularSolids(solidIds, materialId):
+    solidsSet = femap.feSet
+    solidsSet.addarray(feConstants.FT_SOLID, solidIds)
     solidsSet.Debug()
     rc = femap.feSolidExtractCenterlines(solidsSet.ID, materialId, True)
     if rc != -1:
         femap.feAppMessageBox(feConstants.FCM_ERROR, f"Cannot extract centerlines for solids")
         return None
+
+def getTubularEndsSurfaceIds(solidId):
+    return []
+
+def processConicalSolids(solidIds, materialId):
+    for solidId in solidIds:    
+        endsSurfaceIds = getTubularEndsSurfaceIds(solidId)
+
+    return 1
 
 def createMeshOnLines(centerLinesSet):
     meshSize = 0
@@ -120,16 +257,34 @@ def createMeshOnLines(centerLinesSet):
         femap.feAppMessageBox(feConstants.FCM_ERROR, f"Cannot mesh centerlines")
         return None
 
+def getGeomShapesByGroupSet(solidsSet):
+    geomShapesIds = {
+        'cylinder': [],
+        'cone': [],
+        'other': []
+    }
+    while solidsSet.Next():
+        currentSolidId = solidsSet.currentID
+        if getShapeTypeOfSolidGeom(currentSolidId) == 'cylinder':
+            geomShapesIds['cylinder'].append(currentSolidId)
+        elif getShapeTypeOfSolidGeom(currentSolidId) == 'cone':
+            geomShapesIds['cone'].append(currentSolidId)
+        else:
+            geomShapesIds['other'].append(currentSolidId)
+    return geomShapesIds
+
 
 solidsSet = getSetOfSolidsByGroup(getGroupIdAndMaterialIdFromUser())
+geomSortedByShape = getGeomShapesByGroupSet(solidsSet)
+
 tracker = femapStartTrackGeometry()
-processTubularSolids(solidsSet, materialId)
+processTubularSolids(geomSortedByShape['cylinder'], materialId)
 centerLinesSet = getFemapCreatedGeometrySet(tracker)
 createMeshOnLines(centerLinesSet)
 femap.feViewRegenerate(0)
 exit(0)
 
-def getSoligGeom(id):  #1434 - just pipe
+def getSoligGeom(id):  #1434 - just pipe, 1440 - cone
     # myElem = femap.feElem
     # print(dir(myElem))
     # return
