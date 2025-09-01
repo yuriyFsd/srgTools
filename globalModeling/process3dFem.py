@@ -4,6 +4,7 @@ import Pyfemap
 from Pyfemap import constants as feConstants
 import tkinter as tk
 from tkinter import simpledialog
+from processCone import selectConeSolid
 
 def femapConnect():
     try:
@@ -107,46 +108,46 @@ def getBiggestSurfaceAreaField(areas):
     return { biggestField: biggestArea }
 
 
-print(getShapeTypeOfSolidGeom(1440)) #1440 - cone solid
-exit(0)
+# print(getShapeTypeOfSolidGeom(1440)) #1440 - cone solid
+# exit(0)
 
-def createBeamConeProp():
-    fprop = femap.feProp
-    rc = fprop.Last()
-    newId = 2 # fprop.ID + 1
+# def createBeamConeProp():
+#     fprop = femap.feProp
+#     rc = fprop.Last()
+#     newId = 2 # fprop.ID + 1
     
-    myProp = femap.feProp
-    myProp.title = "Cone1"
-    myProp.type = feConstants.FET_L_BEAM
-    myProp.matlID = 401  # 1 - Steel
-    #rc = myProp.Put(newId)#newId)  
-    rc = myProp.SetflagI(1, feConstants.FSHP_CIRC_TUBE)# = 6 #feConstants.FSHP_CIRC_TUBE
-    rc = myProp.SetflagI(0, 1) # Tapered beam flag
-    # rc = myProp.Setpval(40, 0.139)
-    # rc = myProp.Setpval(45, 0.012)
+#     myProp = femap.feProp
+#     myProp.title = "Cone1"
+#     myProp.type = feConstants.FET_L_BEAM
+#     myProp.matlID = 401  # 1 - Steel
+#     #rc = myProp.Put(newId)#newId)  
+#     rc = myProp.SetflagI(1, feConstants.FSHP_CIRC_TUBE)# = 6 #feConstants.FSHP_CIRC_TUBE
+#     rc = myProp.SetflagI(0, 1) # Tapered beam flag
+#     # rc = myProp.Setpval(40, 0.139)
+#     # rc = myProp.Setpval(45, 0.012)
 
-    computeOnlyOneEnd = True
-    shapeID = feConstants.FSHP_CIRC_TUBE
-    dimensions = [0.139, 0, 0, 0, 0, 0.012]
-    EvalMethod = 1 #0=Auto, 1=Orig-inal, 2=Alternate, 3=Nastran PBEAML
-    shear_center_offset = False
-    Warping = False
-    stress_recovery = False
-    rc = myProp.ComputeStdShape2(computeOnlyOneEnd, shapeID, dimensions, feConstants.FSOR_RIGHT, EvalMethod, shear_center_offset, Warping, stress_recovery)
-    dimensions = [0.159, 0, 0, 0, 0, 0.016]
-    computeOnlyOneEnd = False
-    rc = myProp.ComputeStdShape2(computeOnlyOneEnd, shapeID, dimensions, feConstants.FSOR_RIGHT, EvalMethod, shear_center_offset, Warping, stress_recovery)
-    print(rc)
-    myProp.Put(newId)
-    return 1
+#     computeOnlyOneEnd = True
+#     shapeID = feConstants.FSHP_CIRC_TUBE
+#     dimensions = [0.139, 0, 0, 0, 0, 0.012]
+#     EvalMethod = 1 #0=Auto, 1=Orig-inal, 2=Alternate, 3=Nastran PBEAML
+#     shear_center_offset = False
+#     Warping = False
+#     stress_recovery = False
+#     rc = myProp.ComputeStdShape2(computeOnlyOneEnd, shapeID, dimensions, feConstants.FSOR_RIGHT, EvalMethod, shear_center_offset, Warping, stress_recovery)
+#     dimensions = [0.159, 0, 0, 0, 0, 0.016]
+#     computeOnlyOneEnd = False
+#     rc = myProp.ComputeStdShape2(computeOnlyOneEnd, shapeID, dimensions, feConstants.FSOR_RIGHT, EvalMethod, shear_center_offset, Warping, stress_recovery)
+#     print(rc)
+#     myProp.Put(newId)
+#     return 1
 
-createBeamConeProp()
-femap.feViewRegenerate(0)
-exit(0)
+# createBeamConeProp()
+# femap.feViewRegenerate(0)
+# exit(0)
 
-def getGroupIdAndMaterialIdFromUser():
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
+def getGroupIdAndMaterialIdFromUserDialog():
+    # root = tk.Tk()
+    #root.withdraw()  # Hide the main window
     class InputDialog(simpledialog.Dialog):
         def body(self, master):
             tk.Label(master, text="Group ID:").grid(row=0, sticky="e")
@@ -162,7 +163,7 @@ def getGroupIdAndMaterialIdFromUser():
                 self.group_entry.get(),
                 self.material_entry.get()
             )
-
+    
     dialog = InputDialog(root, title="Enter Group and Material IDs")
     if dialog.result:
         try:
@@ -273,8 +274,21 @@ def getGeomShapesByGroupSet(solidsSet):
             geomShapesIds['other'].append(currentSolidId)
     return geomShapesIds
 
+# START EXECUTION
+def runMainDialog():
+    global root
+    root = tk.Tk()
+    root.title("Main Dialog")
+    root.geometry("200x200") #dialog panel size
+    tk.Label(root, text="Choose an action:").pack(pady=20)
 
-solidsSet = getSetOfSolidsByGroup(getGroupIdAndMaterialIdFromUser())
+    tk.Button(root, text="Select Group", command=getGroupIdAndMaterialIdFromUserDialog).pack(pady=10)
+    tk.Button(root, text="By Active Mat'l & Single Solid", command=selectConeSolid).pack(pady=10)
+
+    root.mainloop()
+
+#runMainDialog()
+solidsSet = getSetOfSolidsByGroup(runMainDialog())#getGroupIdAndMaterialIdFromUser())
 geomSortedByShape = getGeomShapesByGroupSet(solidsSet)
 
 tracker = femapStartTrackGeometry()
