@@ -4,7 +4,10 @@ import Pyfemap
 from Pyfemap import constants as feConstants
 import tkinter as tk
 from tkinter import simpledialog
-from processCone import selectConeSolid
+from processCone import selectOneSolid
+from processCone import processSingleSolid
+
+#TODO: rename tubular props for group femap prop creation
 
 def femapConnect():
     try:
@@ -145,7 +148,7 @@ def getBiggestSurfaceAreaField(areas):
 # femap.feViewRegenerate(0)
 # exit(0)
 
-def getGroupIdAndMaterialIdFromUserDialog():
+def getGroupIdAndMaterialIdFromUserDialog(callback):
     # root = tk.Tk()
     #root.withdraw()  # Hide the main window
     class InputDialog(simpledialog.Dialog):
@@ -168,11 +171,14 @@ def getGroupIdAndMaterialIdFromUserDialog():
     if dialog.result:
         try:
             groupId = int(dialog.result[0])
-            global materialId
             materialId = int(dialog.result[1])
+            # groupId = int(dialog.result[0])
+            # global materialId
+            # materialId = int(dialog.result[1])
         except (TypeError, ValueError):
             femap.feAppMessageBox(feConstants.FCM_NORMAL, "Invalid input. Please enter valid integers.")
             return None
+        callback((groupId, materialId))
     else:
         return None
     root.destroy()
@@ -195,7 +201,6 @@ def getSetOfSolidsByGroup(groupId):
     return mySet
 
 def femapStartTrackGeometry():
-
     tracker = femap.feTrackData
     rc = tracker.StartGeometry()
     if rc == -1:
@@ -216,22 +221,21 @@ def getFemapCreatedGeometrySet(tracker):
         return None
 
 def processTubularSolids(solidIds, materialId):
+    print("tubes = ", solidIds)
     solidsSet = femap.feSet
-    solidsSet.addarray(feConstants.FT_SOLID, solidIds)
-    solidsSet.Debug()
+    solidsSet.AddArray(len(solidIds), solidIds)
     rc = femap.feSolidExtractCenterlines(solidsSet.ID, materialId, True)
     if rc != -1:
+        solidsSet.Debug()
         femap.feAppMessageBox(feConstants.FCM_ERROR, f"Cannot extract centerlines for solids")
         return None
 
+def processConicalSolids(solidIds, materialId):
+    for solidId in solidIds:
+        processSingleSolid(solidId, materialId)
+
 def getTubularEndsSurfaceIds(solidId):
     return []
-
-def processConicalSolids(solidIds, materialId):
-    for solidId in solidIds:    
-        endsSurfaceIds = getTubularEndsSurfaceIds(solidId)
-
-    return 1
 
 def createMeshOnLines(centerLinesSet):
     meshSize = 0
@@ -265,7 +269,7 @@ def getGeomShapesByGroupSet(solidsSet):
         'other': []
     }
     while solidsSet.Next():
-        currentSolidId = solidsSet.currentID
+        currentSolidId = solidsSet.CurrentID
         if getShapeTypeOfSolidGeom(currentSolidId) == 'cylinder':
             geomShapesIds['cylinder'].append(currentSolidId)
         elif getShapeTypeOfSolidGeom(currentSolidId) == 'cone':
@@ -274,7 +278,20 @@ def getGeomShapesByGroupSet(solidsSet):
             geomShapesIds['other'].append(currentSolidId)
     return geomShapesIds
 
-# START EXECUTION
+def processSolidsGroup(groupId, materialId):
+    solidsSet = getSetOfSolidsByGroup(groupId)
+    geomSortedByShape = getGeomShapesByGroupSet(solidsSet)
+    tracker = femapStartTrackGeometry()
+    processTubularSolids(geomSortedByShape['cylinder'], materialId)
+    processConicalSolids(geomSortedByShape['cone'], materialId)
+    centerLinesSet = getFemapCreatedGeometrySet(tracker)
+    createMeshOnLines(centerLinesSet)
+    femap.feViewRegenerate(0)
+
+def handle_selection(result):
+    groupId, materialId = result
+    processSolidsGroup(groupId, materialId)
+
 def runMainDialog():
     global root
     root = tk.Tk()
@@ -282,34 +299,17 @@ def runMainDialog():
     root.geometry("200x200") #dialog panel size
     tk.Label(root, text="Choose an action:").pack(pady=20)
 
-    tk.Button(root, text="Select Group", command=getGroupIdAndMaterialIdFromUserDialog).pack(pady=10)
-    tk.Button(root, text="By Active Mat'l & Single Solid", command=selectConeSolid).pack(pady=10)
+    tk.Button(root, text="Select Group And Mat'l", command=lambda: getGroupIdAndMaterialIdFromUserDialog(handle_selection)).pack(pady=10)
+    tk.Button(root, text="By Active Mat'l & Single Solid", command=selectOneSolid).pack(pady=10)
 
     root.mainloop()
 
-#runMainDialog()
-solidsSet = getSetOfSolidsByGroup(runMainDialog())#getGroupIdAndMaterialIdFromUser())
-geomSortedByShape = getGeomShapesByGroupSet(solidsSet)
+# START EXECUTION 
+runMainDialog()
 
-tracker = femapStartTrackGeometry()
-processTubularSolids(geomSortedByShape['cylinder'], materialId)
-centerLinesSet = getFemapCreatedGeometrySet(tracker)
-createMeshOnLines(centerLinesSet)
-femap.feViewRegenerate(0)
-exit(0)
-
-def getSoligGeom(id):  #1434 - just pipe, 1440 - cone
-    # myElem = femap.feElem
-    # print(dir(myElem))
-    # return
-    # rc = myElem.get(1)
-    # print(rc)
-
+def getSoligGeom(id):
     mySolid = femap.feSolid
     rc =  mySolid.Get(id)
-    #print(rc)
-    # surfaces = mySolid.vVolSurface
-    # print(surfaces)
     print(mySolid.type)
     rc, numsrfs, surfsIds = mySolid.Surfaces(2)
     print(rc)
@@ -352,15 +352,6 @@ def getArcGeom(arcCurve):
 
 def getDist(loc1, loc2):
     return 1
-
-# def checkProp():
-#     fprop = femap.feProp
-#     rc = fprop.Get(20421)
-#     for index in range(100):
-#         print(index, fprop.pval(index))
-
-# checkProp()
-# exit(0)
 
 def createBeamPipeProp():
     # print(dir(femap.feProp))
@@ -413,18 +404,17 @@ def createElem(loc1, loc2):
     return 1
 
 def getPerpindicularVectorByLocations(loc1, loc2):
-
     return 1
 
-createElem(1, 2)
-exit()
+# createElem(1, 2)
+# exit()
 
-arcCurve = femap.feCurve
-rc = arcCurve.Get(32128)
-getArcGeom(arcCurve)
-rc = arcCurve.Get(32124)
-getArcGeom(arcCurve)
-32119
-rc = arcCurve.Get(32119)
-getArcGeom(arcCurve)
+# arcCurve = femap.feCurve
+# rc = arcCurve.Get(32128)
+# getArcGeom(arcCurve)
+# rc = arcCurve.Get(32124)
+# getArcGeom(arcCurve)
+# 32119
+# rc = arcCurve.Get(32119)
+# getArcGeom(arcCurve)
 #getSoligGeom(1434)

@@ -17,14 +17,20 @@ def femapConnect():
 
 femap = femapConnect()
 
-def processConeGeom(solidGeomId):
+def processSingleSolid(solidGeomId, matlId = None):
     endsGeom = getSolidConeSurfaces(solidGeomId)
+    matl = {}
+    if not matlId:
+        matl = getActiveMatlIdAndTitle()
+    else:
+        matl["id"] = matlId
+        matl["title"] = getEntityTitleById(matlId, feConstants.FT_MATL)
     #femap.feAppMessageBox(0, f'''{round(endsGeom[0]["radius"]*1000)} {round(endsGeom[1]["radius"]*1000)}''' )
     if (round(endsGeom[0]["radius"]*1000) == round(endsGeom[1]["radius"]*1000)):
         #femap.feAppMessageBox(0,"Cylinder detected" )
-        propId = createBeamCylProp(endsGeom)
+        propId = createBeamCylProp(endsGeom, matl)
     else:
-        propId = createBeamConeProp(endsGeom)
+        propId = createBeamConeProp(endsGeom, matl)
     
     elemId = createElem(endsGeom[0]['center'], endsGeom[1]['center'], propId)
     return {}
@@ -68,6 +74,17 @@ def pointsDistance(coord1, coord2):
     point2 = np.array(coord2)
     return np.linalg.norm(point1 - point2)
 
+def getEntityTitleById(id, entityType):
+    if entityType == feConstants.FT_MATL:
+        fmat = femap.feMatl
+        rc = fmat.Get(id)
+        return fmat.title
+    elif entityType == feConstants.FET_PROPERTY:
+        fprop = femap.feProp
+        rc = fprop.Get(id)
+        return fprop.title
+    return None
+
 def getActiveMatlIdAndTitle():
     fmat = femap.feMatl    
     id = fmat.Active
@@ -90,11 +107,11 @@ def getPropIdByTitle(title):
     if (index >= 0):
         return allPropIdsTitles["id"][index]
 
-def createBeamCylProp(endsGeom):
+def createBeamCylProp(endsGeom, matl):
     mmThkFirstEnd = round(endsGeom[0]['thk'] * 1000)
     mmDiaFirstEnd = round(endsGeom[0]['radius'] * 2 * 1000)
     mmLength = round(pointsDistance(endsGeom[0]['center'], endsGeom[1]['center']) * 1000)
-    matl = getActiveMatlIdAndTitle()
+    #matl = getActiveMatlIdAndTitle()
     propTitle = f'''TUBE - {mmDiaFirstEnd}x{mmThkFirstEnd} - L{mmLength} ({matl["title"]})'''
     existPropId = getPropIdByTitle(propTitle)
     if existPropId:
@@ -126,13 +143,13 @@ def createBeamCylProp(endsGeom):
     myProp.Put(newId)
     return myProp.ID
 
-def createBeamConeProp(endsGeom):
+def createBeamConeProp(endsGeom, matl):
     mmThkFirstEnd = round(endsGeom[0]['thk'] * 1000)
     mmThkSecondEnd = round(endsGeom[1]['thk'] * 1000)
     mmDiaFirstEnd = round(endsGeom[0]['radius'] * 2 * 1000)
     mmDiaSecondEnd = round(endsGeom[1]['radius'] * 2 * 1000)
     mmLength = round(pointsDistance(endsGeom[0]['center'], endsGeom[1]['center']) * 1000)
-    matl = getActiveMatlIdAndTitle()
+    #matl = getActiveMatlIdAndTitle()
     propTitle = f'''CONE - {mmDiaFirstEnd}x{mmThkFirstEnd}/{mmDiaSecondEnd}x{mmThkSecondEnd} - L{mmLength} ({matl["title"]})'''
     existPropId = getPropIdByTitle(propTitle)
     if existPropId:
@@ -251,7 +268,7 @@ def getEndSurfaces(surfIds):
 def getOneConeEndGeom():
     return {}
 
-def selectConeSolid():
+def selectOneSolid():
     # solidSelector = femap.feSelector
     # solidSelector.MultipleMode = False
     # solidSelector.SelectEntity = feConstants.FT_SOLID 39
@@ -262,6 +279,6 @@ def selectConeSolid():
         rc, id = solidSet.SelectID(feConstants.FT_SOLID, 'Select cone solig geom') #39
         print(rc, id)
         if id > 0:
-            processConeGeom(id) #1440
+            processSingleSolid(id) #1440
 
-# selectConeSolid()
+# selectOneSolid()
