@@ -4,10 +4,11 @@ import Pyfemap
 from Pyfemap import constants as feConstants
 import tkinter as tk
 from tkinter import simpledialog
-from processCone import selectOneSolid
-from processCone import processSingleSolid
+from processCone import selectOneSolid, getEntityTitleById, processSingleSolid
+# from processCone import processSingleSolid
 
-#TODO: rename tubular props for group femap prop creation
+#TODO: refactor code: avoid femap duble creation, use classes, separate code by layers
+#TODO make paneled tool
 
 def femapConnect():
     try:
@@ -42,25 +43,25 @@ GEOM_SURFACES = {
     'end2': 3,
 }
 
-def parseSoligGeomSurfaces(solidGeomId):
-    solidGeom = femap.feSolid
-    rc =  solidGeom.Get(solidGeomId)
-    selectingMode = 2 #List contains both the underlying and combined surfaces.
-    rc, numsrfs, surfsIds = solidGeom.Surfaces(selectingMode)
-    surf = femap.feSurface
-    area = 0.0
-    for surfId in surfsIds:
-        rc = surf.Get(surfId)
-        if rc != -1:
-            continue
-        rc = surf.ApproximateArea(area)
-        if area > GEOM_SURFACES['first_biggest']:
-            GEOM_SURFACES['second_biggest'] = GEOM_SURFACES['first_biggest']
-            GEOM_SURFACES['first_biggest'] = area
-            GEOM_SURFACES['end2'] = GEOM_SURFACES['end1']
-            GEOM_SURFACES['end1'] = surfId
+# def parseSoligGeomSurfaces(solidGeomId):
+#     solidGeom = femap.feSolid
+#     rc =  solidGeom.Get(solidGeomId)
+#     selectingMode = 2 #List contains both the underlying and combined surfaces.
+#     rc, numsrfs, surfsIds = solidGeom.Surfaces(selectingMode)
+#     surf = femap.feSurface
+#     area = 0.0
+#     for surfId in surfsIds:
+#         rc = surf.Get(surfId)
+#         if rc != -1:
+#             continue
+#         rc = surf.ApproximateArea(area)
+#         if area > GEOM_SURFACES['first_biggest']:
+#             GEOM_SURFACES['second_biggest'] = GEOM_SURFACES['first_biggest']
+#             GEOM_SURFACES['first_biggest'] = area
+#             GEOM_SURFACES['end2'] = GEOM_SURFACES['end1']
+#             GEOM_SURFACES['end1'] = surfId
 
-    return 1
+#     return 1
 
 
 def getShapeTypeOfSolidGeom(solidGeomId):
@@ -110,9 +111,6 @@ def getBiggestSurfaceAreaField(areas):
             biggestField = field
     return { biggestField: biggestArea }
 
-
-# print(getShapeTypeOfSolidGeom(1440)) #1440 - cone solid
-# exit(0)
 
 # def createBeamConeProp():
 #     fprop = femap.feProp
@@ -200,15 +198,37 @@ def getSetOfSolidsByGroup(groupId):
     mySet.Debug()
     return mySet
 
+def femapStartTrackProperty():
+    tracker = femap.feTrackData
+    rc = tracker.Start(feConstants.FT_PROP)
+    if rc == -1:
+        femap.feAppMessage(feConstants.FCM_HIGHLIGHT, "Tracking of Properties started successfully")
+        return tracker
+    else:
+        femap.feAppMessageBox(feConstants.FCM_ERROR, "Failed to start property tracking")
+        return None
+
 def femapStartTrackGeometry():
     tracker = femap.feTrackData
     rc = tracker.StartGeometry()
     if rc == -1:
-        femap.feAppMessage(feConstants.FCM_HIGHLIGHT, "Tracking started successfully")
+        femap.feAppMessage(feConstants.FCM_HIGHLIGHT, "Tracking geometry started successfully")
         return tracker
     else:
-        femap.feAppMessageBox(feConstants.FCM_ERROR, "Failed to start tracking")
+        femap.feAppMessageBox(feConstants.FCM_ERROR, "Failed to start geometry tracking")
         return None
+
+
+def getFemapCreatedPropSet(tracker):
+    fSet = femap.feSet
+    rc = tracker.Created(feConstants.FT_PROP, fSet.ID, True)
+    if rc == -1:
+        fSet.Debug()
+        return fSet
+    else:
+        femap.feAppMessageBox(feConstants.FCM_ERROR, "Failed to get created property set")
+        return None
+
 
 def getFemapCreatedGeometrySet(tracker):
     geomSet = femap.feSet
@@ -220,7 +240,7 @@ def getFemapCreatedGeometrySet(tracker):
         femap.feAppMessageBox(feConstants.FCM_ERROR, "Failed to get created geometry set")
         return None
 
-def processTubularSolids(solidIds, materialId):
+def processTubularSolidsByFemapAlgo(solidIds, materialId):
     print("tubes = ", solidIds)
     solidsSet = femap.feSet
     solidsSet.AddArray(len(solidIds), solidIds)
@@ -278,11 +298,28 @@ def getGeomShapesByGroupSet(solidsSet):
             geomShapesIds['other'].append(currentSolidId)
     return geomShapesIds
 
+def updatePropTitles(propSet):
+    femap.feViewRegenerate(0)
+    fProp = femap.feProp
+    propSet.Debug()
+    while propSet.Next():
+        rc = fProp.Get(propSet.CurrentID)
+        if "Tube" in fProp.title:
+            matlTitle = getEntityTitleById(fProp.matlID, feConstants.FT_MATL)
+            dia = round(fProp.pval(40) * 1000 * 2)
+            thks = round(fProp.pval(45) * 1000)
+            fProp.title = f'''TUBE - {dia}x{thks} ({matlTitle})'''
+            rc = fProp.Put(fProp.ID)
+    femap.feViewRegenerate(0)
+
 def processSolidsGroup(groupId, materialId):
     solidsSet = getSetOfSolidsByGroup(groupId)
     geomSortedByShape = getGeomShapesByGroupSet(solidsSet)
     tracker = femapStartTrackGeometry()
-    processTubularSolids(geomSortedByShape['cylinder'], materialId)
+    propTracker = femapStartTrackProperty()
+    processTubularSolidsByFemapAlgo(geomSortedByShape['cylinder'], materialId)
+    propSet = getFemapCreatedPropSet(propTracker)
+    updatePropTitles(propSet)
     processConicalSolids(geomSortedByShape['cone'], materialId)
     centerLinesSet = getFemapCreatedGeometrySet(tracker)
     createMeshOnLines(centerLinesSet)

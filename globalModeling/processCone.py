@@ -110,14 +110,12 @@ def getPropIdByTitle(title):
 def createBeamCylProp(endsGeom, matl):
     mmThkFirstEnd = round(endsGeom[0]['thk'] * 1000)
     mmDiaFirstEnd = round(endsGeom[0]['radius'] * 2 * 1000)
-    mmLength = round(pointsDistance(endsGeom[0]['center'], endsGeom[1]['center']) * 1000)
-    #matl = getActiveMatlIdAndTitle()
-    propTitle = f'''TUBE - {mmDiaFirstEnd}x{mmThkFirstEnd} - L{mmLength} ({matl["title"]})'''
+    propTitle = f'''TUBE - {mmDiaFirstEnd}x{mmThkFirstEnd} ({matl["title"]})'''
     existPropId = getPropIdByTitle(propTitle)
     if existPropId:
         femap.feAppMessage(1,"!!!CHECK!!! TO BE USED PROP: " + str(existPropId))
         return existPropId
-    
+
     fprop = femap.feProp
     rc = fprop.Last()
     newId = fprop.ID + 1
@@ -125,7 +123,6 @@ def createBeamCylProp(endsGeom, matl):
 
     myProp = femap.feProp
     myProp.matlID = matl["id"]
-       
     myProp.title = propTitle
     myProp.type = feConstants.FET_L_BEAM
 
