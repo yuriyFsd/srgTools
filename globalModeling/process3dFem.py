@@ -1,10 +1,6 @@
 import sys
-# import pythoncom
-# import Pyfemap
-# from Pyfemap import constants as feConstants
 import tkinter as tk
 from tkinter import simpledialog, messagebox
-#from solidsToFemBeams import selectOneSolid, getEntityTitleById, processSingleSolid, updatePropTitles, processTubularSolidsByFemapAlgo, createMeshOnLines, regenerateFemapView, femapConnect
 import solidsToFemBeams
 
 #TODO: refactor code: use classes, separate code by layers
@@ -54,24 +50,17 @@ def getGroupIdAndMaterialIdFromUserDialog(callback):
         try:
             groupId = int(dialog.result[0])
             materialId = int(dialog.result[1])
-            # groupId = int(dialog.result[0])
-            # global materialId
-            # materialId = int(dialog.result[1])
         except (TypeError, ValueError):
             messagebox.showinfo("Input Error", "Invalid input. Please enter valid integers.")
             return None
-        callback((groupId, materialId))
+        confirm = messagebox.askyesno(
+            "Confirm Input",
+            f"Please confirm to process \n\nGroup ID: {groupId}\nMaterial ID: {materialId}"
+        )
+        if confirm:
+            callback((groupId, materialId))
     else:
         return None
-    root.destroy()
-    if groupId is None:
-        return None
-    if groupId < 1:
-        messagebox.showinfo("Input Error", "Group ID must be greater than 0")
-        return None
-    return groupId
-
-
 
 def processConicalSolids(solidIds, materialId):
     for solidId in solidIds:
@@ -94,7 +83,6 @@ def getGeomShapesByGroupSet(solidsSet):
     return geomShapesIds
 
 def processSolidsGroup(groupId, materialId):
-    solidsToFemBeams.femapConnect()
     solidsSet = solidsToFemBeams.getSetOfSolidsByGroup(groupId)
     geomSortedByShape = getGeomShapesByGroupSet(solidsSet)
     tracker = solidsToFemBeams.femapStartTrackGeometry()
@@ -113,12 +101,17 @@ def handle_selection(result):
     processSolidsGroup(groupId, materialId)
 
 def runMainDialog():
+    solidsToFemBeams.femapConnect()
     global root
     root = tk.Tk()
-    root.title("Main Dialog")
-    root.geometry("200x200") #dialog panel size
-    tk.Label(root, text="Choose an action:").pack(pady=20)
+    #root.attributes('-toolwindow', True) #to remove minimize and maximize buttons
+    root.title("Solids to Beams")
 
+    root.geometry("260x220") #dialog panel size
+    tk.Label(root, text="Create Beam Mesh \n(cones or tubes) By Solids").pack(pady=5)
+    tk.Label(root, text="Choose an option:").pack(pady=5)
+
+    tk.Label(root, text="( ! Group option uses \n Femap Algo for tubes only)").pack()
     tk.Button(root, text="By Selecting Group And Mat'l", command=lambda: getGroupIdAndMaterialIdFromUserDialog(handle_selection)).pack(pady=10)
     tk.Button(root, text="By Active Mat'l & Single Solid", command=solidsToFemBeams.selectOneSolid).pack(pady=10)
 

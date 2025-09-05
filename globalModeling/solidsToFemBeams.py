@@ -7,6 +7,7 @@ from Pyfemap import constants as feConstants
 def femapConnect():
     try:
         existObj = pythoncom.connect(Pyfemap.model.CLSID)
+        global femap
         femap = Pyfemap.model(existObj)
         rc = femap.feAppMessage(feConstants.FCM_NORMAL, "Connected!")
     except Exception as error:
@@ -14,8 +15,6 @@ def femapConnect():
         #ctypes.windll.user32.MessageBoxW(0,"Can't connect to Femap API Server", "Error", 1)
         sys.exit("Can't connect to Femap API Server ")
     return femap
-
-femap = femapConnect()
 
 def processSingleSolid(solidGeomId, matlId = None):
     endsGeom = getSolidConeSurfaces(solidGeomId)
@@ -167,12 +166,6 @@ def createBeamConeProp(endsGeom, matl):
     myProp.Put(newId)
     return myProp.ID
 
-# def findReqdPropId(title): #PAUSED ON THIS FUNCTION
-#     fprop = femap.feProp
-#     rc = fprop.AreDuplicate ( nProp1, nProp2, ignoretitle )
-#     rc, id = fprop.Find(title)
-#     return id
-
 def getSolidConeSurfaces(solidGeomId):
     solid = femap.feSolid
     rc = solid.Get(solidGeomId)
@@ -277,7 +270,7 @@ def getBiggestSurfaceAreaField(areas):
 def getShapeTypeOfSolidGeom(solidGeomId):
     solidGeom = femap.feSolid
     rc =  solidGeom.Get(solidGeomId)
-    print(solidGeom.type)
+    #print(solidGeom.type)
     selectingMode = 2 #List contains both the underlying and combined surfaces.
     rc, numsrfs, surfsIds = solidGeom.Surfaces(selectingMode)
     surf = femap.feSurface
