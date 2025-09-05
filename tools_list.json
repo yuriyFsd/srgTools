@@ -1,7 +1,9 @@
 {"apps": [
-    {"title": "Welding Tool", "file": "openWeldingTool.exe"}, 
-    {"title": "Items/Slings Rotation", "file": "openSlingRotationTool.exe"},
-    {"title": "AnSets Creation", "file": "openAnSetTool.exe"},
-    {"title": "Beams As Members", "file": "openProcessBeamsTool.exe"},
-	{"title": "Model Versions Descr", "file": "modelVersionsMessages.exe"}
+    {"title": "Welding_Tool", "file": "openWeldingTool.exe"}, 
+    {"title": "Items/Slings_Rotation", "file": "openSlingRotationTool.exe"},
+    {"title": "AnSets_Creation", "file": "openAnSetTool.exe"},
+    {"title": "Beams_As_Members", "file": "openProcessBeamsTool.exe"},
+	{"title": "Model_Versions_Descr", "file": "modelVersionsMessages.exe"},
+    {"title": "Solids_To_Beams", "file": "process3dFem.exe"},
+	{"title": "MassTuning", "file": "openMassTuning.exe"}
 ]}
