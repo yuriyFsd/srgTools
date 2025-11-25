@@ -1,7 +1,8 @@
 import sys
 import tkinter as tk
-from tkinter import simpledialog, messagebox
+from tkinter import simpledialog, messagebox, ttk
 import solidsToFemBeams
+import mergeProperties
 
 #TODO: refactor code: use classes, separate code by layers
 #TODO make paneled tool
@@ -100,21 +101,41 @@ def handle_selection(result):
     groupId, materialId = result
     processSolidsGroup(groupId, materialId)
 
+def confirmDialog(message):
+    return messagebox.askyesno("Confirm", message)
+
+def mergeBeamProperties():
+    if confirmDialog("This will merge beam properties of active group based on cross-section and material. Proceed?"):
+        mergedPropNum = mergeProperties.mergeBeamProperties()
+        if mergedPropNum > 0:
+            messagebox.showinfo("Success", f"{mergedPropNum} beam properties merged successfully.")
+        else:
+            messagebox.showinfo("0 property paires found at the active group, nothing to merge")
+
 def runMainDialog():
-    solidsToFemBeams.femapConnect()
+    #solidsToFemBeams.femapConnect()
     global root
     root = tk.Tk()
     #root.attributes('-toolwindow', True) #to remove minimize and maximize buttons
     root.title("Solids to Beams")
+    root.geometry("260x240") #dialog panel size
 
-    root.geometry("260x220") #dialog panel size
-    tk.Label(root, text="Create Beam Mesh \n(cones or tubes) By Solids").pack(pady=5)
-    tk.Label(root, text="Choose an option:").pack(pady=5)
+    notebook = ttk.Notebook(root)
+    notebook.pack(expand=True, fill='both')
+    tab1 = tk.Frame(notebook)
+    tab2 = tk.Frame(notebook)
+    
+    tk.Label(tab1, text="Create Beam Mesh \n(cones or tubes) By Solids").pack(pady=5)
+    tk.Label(tab1, text="Choose an option:").pack(pady=5)
 
-    tk.Label(root, text="( ! Group option uses \n Femap Algo for tubes only)").pack()
-    tk.Button(root, text="By Selecting Group And Mat'l", command=lambda: getGroupIdAndMaterialIdFromUserDialog(handle_selection)).pack(pady=10)
-    tk.Button(root, text="By Active Mat'l & Single Solid", command=solidsToFemBeams.selectOneSolid).pack(pady=10)
+    tk.Label(tab1, text="( ! Group option uses \n Femap Algo for tubes only)").pack()
+    tk.Button(tab1, text="By Selecting Group And Mat'l", command=lambda: getGroupIdAndMaterialIdFromUserDialog(handle_selection)).pack(pady=10)
+    tk.Button(tab1, text="By Active Mat'l & Single Solid", command=solidsToFemBeams.selectOneSolid).pack(pady=10)
 
+    tk.Button(tab2, text="Merge Beam Properties", command=mergeBeamProperties).pack(pady=20)
+
+    notebook.add(tab1, text="Solids to Beams")
+    notebook.add(tab2, text="Beam Work")
     root.mainloop()
 
 # START EXECUTION 
