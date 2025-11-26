@@ -33,7 +33,7 @@ def updateElementsFromPropToProp(mergePropId: int, keepPropId: int):
         return True
     return False
 
-def mergeBeamProperties():
+def mergeBeamProperties(ignoreTitle: bool):
     femapConnect()
     fGroup = getActiveGroup()
     if fGroup is None:
@@ -54,14 +54,13 @@ def mergeBeamProperties():
     fProp: femap.prop = femap.feProp
     
     rc, propsNum, beamPropsArr = groupBeamPropSet.GetArray()
-    ignoreTitle =  True
     mergedPropCount = 0
     for i in range(0, len(beamPropsArr)):
-        print(beamPropsArr[i])
+        #print(beamPropsArr[i])
         for j in range(i+1, len(beamPropsArr)):
           #  print('internal', (beamPropsArr[j]))
             if (fProp.AreDuplicate(beamPropsArr[i], beamPropsArr[j], ignoreTitle) == feConstants.FE_OK):
-                print(beamPropsArr[i], beamPropsArr[j], " are the same")
+                #print(beamPropsArr[i], beamPropsArr[j], " are the same")
                 updateElementsFromPropToProp(beamPropsArr[i],  beamPropsArr[j])
                 femap.feAppMessage(feConstants.FCM_HIGHLIGHT, f"Prop # {beamPropsArr[i]} merged with {beamPropsArr[j]}")
                 mergedPropCount += 1

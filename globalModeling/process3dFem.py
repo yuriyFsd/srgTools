@@ -104,9 +104,10 @@ def handle_selection(result):
 def confirmDialog(message):
     return messagebox.askyesno("Confirm", message)
 
-def mergeBeamProperties():
+def mergeBeamProperties(ignoreNames):
+    messagebox.showinfo("info", f"Ignore Names: {bool(ignoreNames)}")
     if confirmDialog("This will merge beam properties of active group based on cross-section and material. Proceed?"):
-        mergedPropNum = mergeProperties.mergeBeamProperties()
+        mergedPropNum = mergeProperties.mergeBeamProperties(bool(ignoreNames))
         if mergedPropNum > 0:
             messagebox.showinfo("Success", f"{mergedPropNum} beam properties merged successfully.")
         else:
@@ -132,7 +133,10 @@ def runMainDialog():
     tk.Button(tab1, text="By Selecting Group And Mat'l", command=lambda: getGroupIdAndMaterialIdFromUserDialog(handle_selection)).pack(pady=10)
     tk.Button(tab1, text="By Active Mat'l & Single Solid", command=solidsToFemBeams.selectOneSolid).pack(pady=10)
 
-    tk.Button(tab2, text="Merge Beam Properties", command=mergeBeamProperties).pack(pady=20)
+    check_var = tk.IntVar()
+    tk.Button(tab2, text="Merge Active Group Beam Properties", command=lambda: mergeBeamProperties(check_var.get())).pack(pady=20)
+    tk.Checkbutton(tab2, text="Ignore Prop Names", variable=check_var).pack()
+    check_var.set(1)  # Default to checked
 
     notebook.add(tab1, text="Solids to Beams")
     notebook.add(tab2, text="Beam Work")
