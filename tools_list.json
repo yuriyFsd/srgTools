@@ -5,5 +5,6 @@
     {"title": "Beams_As_Members", "file": "openProcessBeamsTool.exe"},
 	{"title": "Model_Versions_Descr", "file": "modelVersionsMessages.exe"},
     {"title": "Solids_To_Beams", "file": "process3dFem.exe"},
-	{"title": "MassTuning", "file": "openMassTuning.exe"}
+	{"title": "MassTuning", "file": "openMassTuning.exe"},
+	{"title": "ExportAnSets", "file": "exportAnSets_V0.exe"}
 ]}

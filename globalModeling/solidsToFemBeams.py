@@ -9,7 +9,7 @@ def femapConnect():
         existObj = pythoncom.connect(Pyfemap.model.CLSID)
         global femap
         femap = Pyfemap.model(existObj)
-        rc = femap.feAppMessage(feConstants.FCM_NORMAL, "Connected!")
+        rc = femap.feAppMessage(feConstants.FCM_NORMAL, "API Tool Connected!")
     except Exception as error:
         print(error)
         #ctypes.windll.user32.MessageBoxW(0,"Can't connect to Femap API Server", "Error", 1)
@@ -41,7 +41,7 @@ def createNodeAtLocation(loc):
 def createElem(loc1, loc2, propId):
     node1 = createNodeAtLocation(loc1)
     node2 = createNodeAtLocation(loc2)
-    felem = femap.feElem
+    felem = femap.feElem    
     felem.type = feConstants.FET_L_BEAM
     felem.topology = 0
     felem.propID = propId
@@ -73,7 +73,7 @@ def getEntityTitleById(id, entityType):
     return None
 
 def getActiveMatlIdAndTitle():
-    fmat = femap.feMatl    
+    fmat = femap.feMatl
     id = fmat.Active
     if (id == 0):
         femap.feAppMessageBox(0,"Activate Material and run again." )

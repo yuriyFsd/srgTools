@@ -113,8 +113,8 @@ def mergeBeamProperties(ignoreNames):
         else:
             messagebox.showinfo("0 property paires found at the active group, nothing to merge")
 
-def runMainDialog():
-    #solidsToFemBeams.femapConnect()
+def runMainDialog():    
+    solidsToFemBeams.femapConnect()
     global root
     root = tk.Tk()
     #root.attributes('-toolwindow', True) #to remove minimize and maximize buttons

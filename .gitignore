@@ -3,8 +3,15 @@
 /globalModeling/build
 /globalModeling/dist
 *.xlsm
+*.sql
 *.exe
+*.pyc
+*.mp4
 *.spec
 *.7z.*
 *.7z
 *.zip
+/exportAnSets/build
+/exportAnSets/dist
+*.toc
+*.modfem
